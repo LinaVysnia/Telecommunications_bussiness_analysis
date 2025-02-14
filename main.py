@@ -87,7 +87,7 @@ df = pd.DataFrame(scaler.fit_transform(df), columns=df.columns)
 #---------------------------------------------------------
 #Printing correlation matrix
 
-def show_correlation(corr):
+def show_correlation_matrix(corr):
 
     #this will mask the upper triangle
     mask = np.triu(np.ones_like(corr, dtype=bool))
@@ -137,55 +137,77 @@ df = df[['SeniorCitizen', 'Partner', 'Dependents', 'tenure', 'PhoneService',
        'PaymentMethod_Electronic check', 'PaymentMethod_Mailed check', 'Churn']]
 
 df_corr = df.corr()
-#show_correlation(df_corr)
+#show_correlation_matrix(df_corr)
+
+
+def prepare_corr_data(df, name):
+    df = df_corr[name]
+    df = df.reset_index()
+    df.columns = ['Feature', 'Correlation']
+    df.drop(df.loc[df['Feature']==name].index, inplace=True)
+    df = df.sort_values(by='Correlation', ascending=False)
+
+    return df
+
+def show_correlation_bars(df, name):
+
+    ax1 = sns.barplot(data=df, x="Feature", y="Correlation", hue="Correlation", legend=False, alpha=0.8)
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha='right')
+
+    for p in ax1.patches:
+        ax1.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()/2), 
+                    ha='center', va='bottom', fontsize=10)
+
+    plt.title(f"All correlation for {name}")
+    plt.tight_layout()
+    plt.show()
+
+def show_pos_corr(df, name):
+
+    meaningful_pos_corr = df.loc[(df['Correlation'] > 0.15)]
+    ax1 = sns.barplot(data=meaningful_pos_corr, x="Feature", y="Correlation", hue="Correlation", legend=False, alpha=0.8)
+    ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha='right')
+
+    for p in ax1.patches:
+        ax1.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()/2), 
+                    ha='center', va='bottom', fontsize=10)
+
+    plt.title(f"Meaningful positive correlation for {name} (>0.15)")
+    plt.tight_layout()
+    plt.show()
+    
+def show_neg_corr(df, name):
+
+    meaningful_neg_corr = df.loc[(df['Correlation'] < -0.15)]
+
+    plt.figure()  # Set figure size for the second plot
+    ax2 = sns.barplot(data=meaningful_neg_corr, x="Feature", y="Correlation", hue="Correlation", legend=False, alpha=0.8)
+    ax2.set_xticklabels(ax2.get_xticklabels(), rotation=45, ha='right')
+
+    for p in ax2.patches:
+        ax2.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()/2), 
+                    ha='center', va='bottom', fontsize=10)
+
+    plt.title(f"Meaningful negative correlation for {name} (<-0.15)")
+    plt.tight_layout()
+    plt.show()
+
+df_churn_corr = prepare_corr_data(df, "Churn")
+show_correlation_bars(df_churn_corr, "churn")
+#show_pos_corr(df_churn_corr, "churn")
+#show_neg_corr(df_churn_corr, "churn")
 
 #---------------------------------------------------------
-#Cleaning data to get churn correlations specificly
+#Taking the most incluential from each side and finding their correlations
 
-df_churn_corr = df_corr['Churn']
-df_churn_corr = df_churn_corr.reset_index()
-df_churn_corr.columns = ['Feature', 'Correlation']
-df_churn_corr.drop(df_churn_corr.loc[df_churn_corr['Feature']=='Churn'].index, inplace=True)
-df_churn_corr = df_churn_corr.sort_values(by='Correlation', ascending=False)
+df_churn_corr = prepare_corr_data(df, "Contract_Month-to-month")
+#show_pos_corr(df_churn_corr, "month to month contract")
+#show_neg_corr(df_churn_corr, "month to month contract")
 
-#---------------------------------------------------------
-#Plotting meaningful positive correlation
+df_churn_corr = prepare_corr_data(df, "tenure")
+#show_pos_corr(df_churn_corr, "tenure")
+#show_neg_corr(df_churn_corr, "tenure")
 
-meaningful_pos_corr = df_churn_corr.loc[(df_churn_corr['Correlation'] > 0.15)]
-
-plt.figure()  # Set figure size for the first plot
-ax1 = sns.barplot(data=meaningful_pos_corr, x="Feature", y="Correlation", hue="Correlation", legend=False, alpha=0.8)
-
-# Rotate x-axis labels and align them properly
-ax1.set_xticklabels(ax1.get_xticklabels(), rotation=45, ha='right')
-
-# Annotate bars with correlation values
-for p in ax1.patches:
-    ax1.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()/2), 
-                 ha='center', va='bottom', fontsize=10)
-
-plt.title("Meaningful positive correlation for churn (>0.15)")
-plt.tight_layout()
-plt.show()
-
-#---------------------------------------------------------
-#Plotting meaningful negative correlation
-
-meaningful_neg_corr = df_churn_corr.loc[(df_churn_corr['Correlation'] < -0.15)]
-
-plt.figure()  # Set figure size for the second plot
-ax2 = sns.barplot(data=meaningful_neg_corr, x="Feature", y="Correlation", hue="Correlation", legend=False, alpha=0.8)
-ax2.set_xticklabels(ax2.get_xticklabels(), rotation=45, ha='right')
-
-for p in ax2.patches:
-    ax2.annotate(f"{p.get_height():.2f}", (p.get_x() + p.get_width() / 2., p.get_height()/2), 
-                 ha='center', va='bottom', fontsize=10)
-
-plt.title("Meaningful negative correlation for churn (<-0.15)")
-plt.tight_layout()
-plt.show()
-
-print(df_churn_corr)
 
 #koreliacija nebereiksminga nuo 0.15 - 0.2 tame tarpe atsirenkinejam
 #paziureti klusterizacija su churn ir be churn
