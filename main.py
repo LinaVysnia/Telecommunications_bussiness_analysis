@@ -24,8 +24,6 @@ for column in df.columns:
     df[column] = df[column].replace(" ", None)
     df = df.dropna(how='any', axis=0) #removes 11 rows where TotalCharges were missing
 
-
-
 def show_column_analysis(df):
     for column in df.columns:
 
@@ -192,22 +190,149 @@ def show_neg_corr(df, name):
     plt.tight_layout()
     plt.show()
 
-df_churn_corr = prepare_corr_data(df, "Churn")
-show_correlation_bars(df_churn_corr, "churn")
+#df_churn_corr = prepare_corr_data(df, "Churn")
+#show_correlation_bars(df_churn_corr, "churn")
 #show_pos_corr(df_churn_corr, "churn")
 #show_neg_corr(df_churn_corr, "churn")
 
-#---------------------------------------------------------
-#Taking the most incluential from each side and finding their correlations
+##---------------------------------------------------------
+##Taking the most incluential from each side and finding their correlations
 
-df_churn_corr = prepare_corr_data(df, "Contract_Month-to-month")
+#df_churn_corr = prepare_corr_data(df, "Contract_Month-to-month")
 #show_pos_corr(df_churn_corr, "month to month contract")
 #show_neg_corr(df_churn_corr, "month to month contract")
 
-df_churn_corr = prepare_corr_data(df, "tenure")
+#df_churn_corr = prepare_corr_data(df, "tenure")
 #show_pos_corr(df_churn_corr, "tenure")
 #show_neg_corr(df_churn_corr, "tenure")
 
-
 #koreliacija nebereiksminga nuo 0.15 - 0.2 tame tarpe atsirenkinejam
 #paziureti klusterizacija su churn ir be churn
+
+#---------------------------------------------------------
+#collapsing dimensions
+
+#gender has no correlation to anything, removing
+df.drop(columns=["Male"], inplace=True) 
+
+#---------------------------------------------------------
+#Kmeans prep
+
+def show_variance_vs_comp_num(df):
+    pca = PCA()
+    pca.fit_transform(df)
+    explained_variance_ratio = np.cumsum(pca.explained_variance_ratio_) #how much additional components increase variance
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio, marker='o', linestyle='--')
+    # plt.axhline(y=0.95, color='r', linestyle='--')  # 95% variance threshold
+    plt.xlabel('Number Components')
+    plt.ylabel('Cumulative Explained Variance')
+    plt.title('Variance against Number of Components')
+    plt.show()
+
+#show_variance_vs_comp_num(df)
+
+#21 maximum, addvantage of every parameter after that is very close to 0. I should try 7, 10, 15 and 21
+n_comp = 21 #not sure if I'd use this many...
+
+def show_kmeans_elbow(df, n):
+    pca = PCA(n_components=21)
+    df_flat = pca.fit_transform(df)
+
+    wcss= []
+    for k in range(1,20):
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(df_flat)
+        wcss.append(kmeans.inertia_)
+
+    plt.plot(range(1,20), wcss, marker="o", linestyle="--")
+    plt.show()
+
+#show_kmeans_elbow(df, n_comp)
+
+#I think 5 works best
+n_clust = 5
+
+#---------------------------------------------------------
+#Kmeans action
+
+kmeans = KMeans(n_clusters=n_clust, random_state=42)
+df['cluster'] = kmeans.fit_predict(df)
+
+def show_2d_PCA_clusters(df):
+    pca = PCA(n_components=2, random_state=42)
+    pca_components = pca.fit_transform(df)
+
+    pca_df = pd.DataFrame(data=pca_components, columns=['PC1', 'PC2'])
+    pca_df['cluster'] = df['cluster']
+
+    plt.figure(figsize=(10, 8))
+    scatter = plt.scatter(x=pca_df['PC1'], y=pca_df['PC2'], c=pca_df['cluster'], cmap='viridis', alpha=0.7)
+
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.title('KMeans Clusters Visualized with PCA')
+
+    # Create a legend for the clusters
+    plt.legend(*scatter.legend_elements(), title="Clusters")
+    plt.show()
+#show_2d_PCA_clusters(df)
+
+def show_3d_PCA_clusters(df):
+
+    pca = PCA(n_components=3, random_state=42)
+    pca_components = pca.fit_transform(df)
+
+    pca_df = pd.DataFrame(data=pca_components, columns=['PC1', 'PC2', 'PC3'])
+    pca_df['cluster'] = df['cluster']
+
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    scatter = ax.scatter(pca_df['PC1'], pca_df['PC2'], pca_df['PC3'], c=pca_df['cluster'], cmap='viridis', alpha=0.7)
+
+    ax.set_xlabel('Principal Component 1')
+    ax.set_ylabel('Principal Component 2')
+    ax.set_zlabel('Principal Component 3')
+    ax.set_title('3D Visualization of KMeans Clusters with PCA')
+
+    legend1 = ax.legend(*scatter.legend_elements(), title="Clusters")
+    ax.add_artist(legend1)
+
+    plt.show()
+#show_3d_PCA_clusters(df)
+
+df_churn_corr = prepare_corr_data(df, "Churn")
+
+notable_features = ["cluster", "Churn"]
+notable_features.extend(df_churn_corr["Feature"].head(3).values)
+notable_features.extend(df_churn_corr["Feature"].tail(3).values)
+
+# Define your custom bubble plot function for off-diagonals
+def cluster_intersection_bubble_plot(x, y, hue=None, **kwargs):
+    ax = plt.gca()  # Get the current subplot axis
+    
+    # Create a DataFrame with the x, y, and cluster values
+    temp_df = pd.DataFrame({'x': x, 'y': y, 'cluster': hue})
+    
+    # Count the number of points at each (x, y, cluster) combination
+    grouped = temp_df.groupby(['x', 'y', 'cluster']).size().reset_index(name='count')
+
+    # Plot each (x, y) intersection with bubble size based on count
+    for _, row in grouped.iterrows():
+        ax.scatter(row['x'], row['y'], 
+                   s=row['count'] * 50,  # Adjust size multiplier as needed
+                   alpha=0.7, 
+                   label=f"Cluster {row['cluster']}")
+
+    # Ensure the plot does not duplicate legend entries
+    handles, labels = ax.get_legend_handles_labels()
+    unique_labels = dict(zip(labels, handles))
+    ax.legend(unique_labels.values(), unique_labels.keys(), title="Cluster", bbox_to_anchor=(1.05, 1), loc="upper left")
+
+grid = sns.PairGrid(df[notable_features].sample(n=1000), hue= "cluster", palette="Set1", diag_sharey=False, corner=True) 
+grid.map_diag(sns.histplot, multiple="dodge")
+grid.map_offdiag(sns.histplot, multiple="stack", discrete=True, shrink=0.8)  
+grid.add_legend()
+plt.show()
