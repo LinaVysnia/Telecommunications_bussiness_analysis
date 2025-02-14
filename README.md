@@ -7,11 +7,11 @@
 
 ### Exploratory Data Analysis (EDA)
 - [ ] Visualise distributions
-- [ ] Create correlation matrix  
-- [ ] Analyse client behaviour and focus on tendencies for leaving
+- [X] Create correlation matrix  
+- [X] Analyse client behaviour and focus on tendencies for leaving
 
 ### Unsupervised Machine Learning (clustering)
-- [ ] Get the optimal cluster number using KNN
+- [X] Get the optimal cluster number using KNN
 - [ ] Do hierarchical clustering and get a dendrogram
 
 ### Supervised Machine Learning (prognosis)
