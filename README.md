@@ -1,9 +1,9 @@
 ## To-Do List ✅
 
 ### Preparation
-- [ ] Clean data  
-- [ ] Convert categorical data to numerical
-- [ ] Normalise data
+- [X] Clean data  
+- [X] Convert categorical data to numerical
+- [X] ~~Normalise~~ Standartised the data for now instead
 
 ### Exploratory Data Analysis (EDA)
 - [ ] Visualise distributions
