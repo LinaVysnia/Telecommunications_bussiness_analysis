@@ -24,7 +24,7 @@
 ### Interpretation and Analysis
 - [ ] Analyse and interpret clusters' behaviours
 - [ ] Analyse and interpret prognosis
-- [ ] Get the variables the most responsible for client churn
+- [X] Get the variables the most responsible for client churn
 - [ ] Present business recommendations to improve client retention
 
 - [ ] Write a report with steps taken, conclusions, practical suggestions
