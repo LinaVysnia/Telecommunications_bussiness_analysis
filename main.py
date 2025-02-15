@@ -5,9 +5,13 @@ import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.metrics import silhouette_score, calinski_harabasz_score
 
 from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
+
+#---------------------------------------------------------
+#DAta cleanup and preparation
 
 df = pd.read_csv('WA_Fn-UseC_-Telco-Customer-Churn.csv')
 
@@ -53,11 +57,6 @@ for column in double_columns.columns:
 
 df["Male"] = df["gender"].map({'Male': 1, 'Female': 0})
 df.drop(columns="gender", inplace=True)
-
-#checks if everything went ok - it did!
-# double_columns.drop(columns="gender", inplace=True)
-# double_columns["Male"] = df["Male"]
-# print(df[double_columns.columns].head(30))
 
 #---------------------------------------------------------
 #OHE ENCODING WHERE POSSIBLE
@@ -216,7 +215,7 @@ def show_neg_corr(df, name):
 df.drop(columns=["Male"], inplace=True) 
 
 #---------------------------------------------------------
-#Kmeans prep
+#Kmeans tests and action
 
 def show_variance_vs_comp_num(df):
     pca = PCA()
@@ -225,40 +224,86 @@ def show_variance_vs_comp_num(df):
 
     plt.figure(figsize=(8, 5))
     plt.plot(range(1, len(explained_variance_ratio) + 1), explained_variance_ratio, marker='o', linestyle='--')
-    # plt.axhline(y=0.95, color='r', linestyle='--')  # 95% variance threshold
     plt.xlabel('Number Components')
     plt.ylabel('Cumulative Explained Variance')
     plt.title('Variance against Number of Components')
     plt.show()
 
-#show_variance_vs_comp_num(df)
+def show_kmeans_elbow_PCA_range(df, n_list:list):
 
-#21 maximum, addvantage of every parameter after that is very close to 0. I should try 7, 10, 15 and 21
-n_comp = 21 #not sure if I'd use this many...
+    colors = plt.cm.viridis(np.linspace(0, 1, len(n_list)))
 
-def show_kmeans_elbow(df, n):
-    pca = PCA(n_components=21)
-    df_flat = pca.fit_transform(df)
+    for i, n in enumerate(n_list):
+        pca = PCA(n_components=n, random_state=42)
+        df_flat = pca.fit_transform(df)
+
+        wcss= []
+        for k in range(1,20):
+            kmeans = KMeans(n_clusters=k, random_state=42)
+            kmeans.fit(df_flat)
+            wcss.append(kmeans.inertia_)
+
+        plt.plot(range(1, 20), wcss, marker="o", linestyle="--", alpha=0.7, color=colors[i],label=f"{n} PCA components")
 
     wcss= []
-    for k in range(1,20):
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        kmeans.fit(df_flat)
+    for j in range(1,20):
+        kmeans = KMeans(n_clusters=j, random_state=42)
+        kmeans.fit(df)
         wcss.append(kmeans.inertia_)
 
-    plt.plot(range(1,20), wcss, marker="o", linestyle="--")
+    plt.plot(range(1, 20), wcss, marker="o", linestyle="--", alpha=0.7, color="black",label=f"No PCA applied")
+
+    plt.xlabel('N clusters')
+    plt.ylabel('WCSS')
+    plt.title(f'KMeans Elbow for a range of PCA components')
+    plt.legend(title="PCA components")
     plt.show()
 
-#show_kmeans_elbow(df, n_comp)
+def show_kmneans_clust_sil_score(df, pca_list:list, k_list:list):
+    
+    colors = plt.cm.viridis(np.linspace(0, 1, len(pca_list)))
 
-#I think 5 works best
-n_clust = 5
+    for i, n in enumerate(pca_list):
+        pca = PCA(n_components=n, random_state=42)
+        df_flat = pca.fit_transform(df)
+
+        s_score = []
+        for k in k_list:
+
+            kmeans = KMeans(n_clusters=k, random_state=42)
+            clusters = kmeans.fit_predict(df_flat)
+
+            score = silhouette_score(df_flat, clusters)
+            s_score.append(score)
+
+        plt.plot(k_list, s_score, marker="o", linestyle="--", alpha=0.7, color=colors[i], label=f"{n} PCA components")
+
+    s_score = []
+    for j in k_list:
+
+        kmeans = KMeans(n_clusters=j, random_state=42)
+        clusters = kmeans.fit_predict(df)
+
+        score = silhouette_score(df, clusters)
+        s_score.append(score)
+
+    plt.plot(k_list, s_score, marker="o", linestyle="--", alpha=0.7, color="black",label=f"No PCA applied")
+
+    plt.xlabel('N clusters')
+    plt.ylabel('WCSS')
+    plt.title(f'KMeans Silhuette Score for a Range of PCA components')
+    plt.legend(title="PCA components")
+    plt.show()
+
+#show_variance_vs_comp_num(df)
+
+n_PCA=[2, 5, 7, 10, 15, 21]
+
+#show_kmeans_elbow_PCA_range(df, n_PCA)
+#show_kmneans_clust_sil_score(df, n_PCA, range(2, 11))
 
 #---------------------------------------------------------
-#Kmeans action
-
-kmeans = KMeans(n_clusters=n_clust, random_state=42)
-df['cluster'] = kmeans.fit_predict(df)
+#PCA action
 
 def show_2d_PCA_clusters(df):
     pca = PCA(n_components=2, random_state=42)
@@ -277,7 +322,6 @@ def show_2d_PCA_clusters(df):
     # Create a legend for the clusters
     plt.legend(*scatter.legend_elements(), title="Clusters")
     plt.show()
-#show_2d_PCA_clusters(df)
 
 def show_3d_PCA_clusters(df):
 
@@ -301,38 +345,47 @@ def show_3d_PCA_clusters(df):
     ax.add_artist(legend1)
 
     plt.show()
+
+def show_PCA_component_matrix(df, feature):
+    df_corr = prepare_corr_data(df, feature)
+
+    notable_features = ["cluster", feature]
+    notable_features.extend(df_corr["Feature"].head(3).values)
+    notable_features.extend(df_corr["Feature"].tail(3).values)
+
+    grid = sns.PairGrid(df[notable_features].sample(n=1000), hue= "cluster", palette="Set1", diag_sharey=False, corner=True) 
+    grid.map_diag(sns.histplot, multiple="dodge")
+    grid.map_offdiag(sns.histplot, multiple="stack", discrete=True, shrink=0.8)  
+    grid.add_legend()
+    plt.show()
+
+n_clust = 5
+kmeans = KMeans(n_clusters=n_clust, random_state=42)
+df['cluster'] = kmeans.fit_predict(df)
+
+#show_2d_PCA_clusters(df)
 #show_3d_PCA_clusters(df)
+#show_PCA_component_matrix(df, "Churn")
 
-df_churn_corr = prepare_corr_data(df, "Churn")
+#---------------------------------------------------------
+#Hierarchical plotting
 
-notable_features = ["cluster", "Churn"]
-notable_features.extend(df_churn_corr["Feature"].head(3).values)
-notable_features.extend(df_churn_corr["Feature"].tail(3).values)
+def hierarchical_plotting(df):
+    linkage_matrix = linkage(df, method="ward") 
+    dendrogram(linkage_matrix)
+    # plt.figure(figsize=(10,7))
+    plt.title("Hierarchical clustering dendogram")
+    plt.xlabel("Sample index")
+    plt.ylabel("Distance")
 
-# Define your custom bubble plot function for off-diagonals
-def cluster_intersection_bubble_plot(x, y, hue=None, **kwargs):
-    ax = plt.gca()  # Get the current subplot axis
-    
-    # Create a DataFrame with the x, y, and cluster values
-    temp_df = pd.DataFrame({'x': x, 'y': y, 'cluster': hue})
-    
-    # Count the number of points at each (x, y, cluster) combination
-    grouped = temp_df.groupby(['x', 'y', 'cluster']).size().reset_index(name='count')
+    cut_clusters = 110
 
-    # Plot each (x, y) intersection with bubble size based on count
-    for _, row in grouped.iterrows():
-        ax.scatter(row['x'], row['y'], 
-                   s=row['count'] * 50,  # Adjust size multiplier as needed
-                   alpha=0.7, 
-                   label=f"Cluster {row['cluster']}")
+    df["cluster"]  = fcluster(linkage_matrix, cut_clusters, criterion="distance")
 
-    # Ensure the plot does not duplicate legend entries
-    handles, labels = ax.get_legend_handles_labels()
-    unique_labels = dict(zip(labels, handles))
-    ax.legend(unique_labels.values(), unique_labels.keys(), title="Cluster", bbox_to_anchor=(1.05, 1), loc="upper left")
+    #print(df)
 
-grid = sns.PairGrid(df[notable_features].sample(n=1000), hue= "cluster", palette="Set1", diag_sharey=False, corner=True) 
-grid.map_diag(sns.histplot, multiple="dodge")
-grid.map_offdiag(sns.histplot, multiple="stack", discrete=True, shrink=0.8)  
-grid.add_legend()
-plt.show()
+    plt.axhline(y=cut_clusters, color = "r", linestyle="--", label = f"Cut for {cut_clusters} distance")
+
+    plt.show()
+
+#hierarchical_plotting(df)
