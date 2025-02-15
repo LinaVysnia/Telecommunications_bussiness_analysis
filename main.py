@@ -209,13 +209,91 @@ def show_neg_corr(df, name):
 #paziureti klusterizacija su churn ir be churn
 
 #---------------------------------------------------------
-#collapsing dimensions
+#Feature reduction
 
-#gender has no correlation to anything, removing
-df.drop(columns=["Male"], inplace=True) 
+df_churn_corr = prepare_corr_data(df, "Churn")
+
+def show_meaningful_corr_features(df, cor_range):
+    f_num=[]
+
+    for c in cor_range:
+        meaningful_corr = df.loc[abs(df['Correlation']) > c]
+        f_num.append(meaningful_corr.shape[0])
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(cor_range, f_num, marker='o', linestyle='--')
+    plt.xlabel('Absolute meaningful correlation')
+    plt.ylabel('Number of features selected')
+    plt.title('Number of features selected per absolute meaningful correlation')
+    plt.show()
+
+meaningful_corrs = [x/100 for x in (range(15, 26))]
+#show_meaningful_corr_features(df_churn_corr, meaningful_corrs)
+
+#0.23 would give key 9 features (+1 "churn") which could produce meaningful clustering
+key_feature_corr = df_churn_corr.loc[abs(df_churn_corr['Correlation']) > 0.23]
+key_features = list(key_feature_corr["Feature"].values)
+key_features.append("Churn")
+
+df_reduced = df[key_features]
 
 #---------------------------------------------------------
-#Kmeans tests and action
+#KMeans
+
+def show_kmeans_elbow_range(df, n_list:list):
+
+    wcss= []
+    for n in n_list:
+        kmeans = KMeans(n_clusters=n, random_state=42)
+        kmeans.fit(df)
+        wcss.append(kmeans.inertia_)
+
+    plt.plot(n_list, wcss, marker="o", linestyle="--", alpha=0.7)
+
+    plt.xlabel('N clusters')
+    plt.ylabel('WCSS')
+    plt.title(f'KMeans Elbow')
+    plt.show()
+
+def show_kmneans_clust_sil_score(df, k_list:list):
+    
+    s_score = []
+    for k in k_list:
+
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        clusters = kmeans.fit_predict(df)
+
+        score = silhouette_score(df, clusters)
+        s_score.append(score)
+
+    plt.plot(k_list, s_score, marker="o", linestyle="--")
+
+    plt.xlabel('N clusters')
+    plt.ylabel('Silhouette Score')
+    plt.title(f'KMeans Silhuette Score for key features')
+    plt.legend(title="PCA components")
+    plt.show()
+
+def show_cluster_behaviour(df, n_clust):
+
+    kmeans = KMeans(n_clusters=n_clust, random_state=42)
+    kmeans.fit(df)
+
+    #having cluster info as part of df, is there a way to not do that?
+    df['Cluster'] = kmeans.fit_predict(df)
+
+    grid = sns.PairGrid(df, hue= "Cluster", palette="Set1", diag_sharey=False, corner=True) #grid_kws={"alpha": 0.8},
+    grid.map_diag(sns.histplot, multiple="dodge")
+    grid.map_offdiag(sns.scatterplot) #, kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], s=200, c='red', marker='X', label='Centroids'
+    grid.add_legend()
+    plt.show()
+ 
+#show_kmeans_elbow_range(df_reduced, range(2, 15))
+#show_kmneans_clust_sil_score(df_reduced, range(2, 15))
+
+show_cluster_behaviour(df_reduced, 4)
+#---------------------------------------------------------
+#Kmeans + PCA tests
 
 def show_variance_vs_comp_num(df):
     pca = PCA()
@@ -259,7 +337,7 @@ def show_kmeans_elbow_PCA_range(df, n_list:list):
     plt.legend(title="PCA components")
     plt.show()
 
-def show_kmneans_clust_sil_score(df, pca_list:list, k_list:list):
+def show_kmneans_PCA_clust_sil_score(df, pca_list:list, k_list:list):
     
     colors = plt.cm.viridis(np.linspace(0, 1, len(pca_list)))
 
@@ -300,7 +378,7 @@ def show_kmneans_clust_sil_score(df, pca_list:list, k_list:list):
 n_PCA=[2, 5, 7, 10, 15, 21]
 
 #show_kmeans_elbow_PCA_range(df, n_PCA)
-#show_kmneans_clust_sil_score(df, n_PCA, range(2, 11))
+#show_kmneans_PCA_clust_sil_score(df, n_PCA, range(2, 11))
 
 #---------------------------------------------------------
 #PCA action
@@ -371,21 +449,18 @@ df['cluster'] = kmeans.fit_predict(df)
 #Hierarchical plotting
 
 def hierarchical_plotting(df):
+
     linkage_matrix = linkage(df, method="ward") 
     dendrogram(linkage_matrix)
-    # plt.figure(figsize=(10,7))
-    plt.title("Hierarchical clustering dendogram")
-    plt.xlabel("Sample index")
-    plt.ylabel("Distance")
 
     cut_clusters = 110
 
     df["cluster"]  = fcluster(linkage_matrix, cut_clusters, criterion="distance")
 
-    #print(df)
-
-    plt.axhline(y=cut_clusters, color = "r", linestyle="--", label = f"Cut for {cut_clusters} distance")
-
+    plt.title("Hierarchical clustering dendogram")
+    plt.xlabel("Sample index")
+    plt.ylabel("Distance")
+    #plt.axhline(y=cut_clusters, color = "r", linestyle="--", label = f"Cut for {cut_clusters} distance")
     plt.show()
 
 #hierarchical_plotting(df)
