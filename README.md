@@ -6,6 +6,7 @@
 - [X] ~~Normalise~~ Standartised the data for now instead
 
 ### Exploratory Data Analysis (EDA)
+
 - [X] Visualise distributions
 - [X] Create correlation matrix  
 - [X] Analyse client behaviour and focus on tendencies for leaving
