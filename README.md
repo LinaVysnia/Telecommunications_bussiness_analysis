@@ -15,11 +15,11 @@
 - [X] Do hierarchical clustering and get a dendrogram
 
 ### Supervised Machine Learning (prognosis)
-- [ ] Train DT model
-- [ ] Train RF model
-- [ ] Train SVM model
-- [ ] Train some more models (optional)
-- [ ] Compare using RMSE, R2 score and cross-validation. Find the most suitable model
+- [X] Train DT model
+- [X] Train RF model
+- [X] Train SVM model
+- [X] Train some more models (optional)
+- [X] Compare using ~~RMSE, R2 score~~ f1 score (because this is classification, not recursion) and cross-validation. Find the most suitable model
 
 ### Interpretation and Analysis
 - [X] Analyse and interpret clusters' behaviours
@@ -27,5 +27,5 @@
 - [X] Get the variables the most responsible for client churn
 - [X] Present business recommendations to improve client retention
 
-- [ ] Write a report with steps taken, conclusions, practical suggestions
+- [X] Write a report with steps taken, conclusions, practical suggestions
 - [X] Add pretty pictures of graphs✨
