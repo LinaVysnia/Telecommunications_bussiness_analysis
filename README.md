@@ -6,13 +6,13 @@
 - [X] ~~Normalise~~ Standartised the data for now instead
 
 ### Exploratory Data Analysis (EDA)
-- [ ] Visualise distributions
-- [ ] Create correlation matrix  
-- [ ] Analyse client behaviour and focus on tendencies for leaving
+- [X] Visualise distributions
+- [X] Create correlation matrix  
+- [X] Analyse client behaviour and focus on tendencies for leaving
 
 ### Unsupervised Machine Learning (clustering)
-- [ ] Get the optimal cluster number using KNN
-- [ ] Do hierarchical clustering and get a dendrogram
+- [X] Get the optimal cluster number using KNN
+- [X] Do hierarchical clustering and get a dendrogram
 
 ### Supervised Machine Learning (prognosis)
 - [ ] Train DT model
@@ -22,10 +22,10 @@
 - [ ] Compare using RMSE, R2 score and cross-validation. Find the most suitable model
 
 ### Interpretation and Analysis
-- [ ] Analyse and interpret clusters' behaviours
+- [X] Analyse and interpret clusters' behaviours
 - [ ] Analyse and interpret prognosis
-- [ ] Get the variables the most responsible for client churn
-- [ ] Present business recommendations to improve client retention
+- [X] Get the variables the most responsible for client churn
+- [X] Present business recommendations to improve client retention
 
 - [ ] Write a report with steps taken, conclusions, practical suggestions
-- [ ] Add pretty pictures of graphs✨
+- [X] Add pretty pictures of graphs✨
