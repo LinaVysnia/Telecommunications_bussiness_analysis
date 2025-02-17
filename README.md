@@ -1,4 +1,5 @@
 # Data analysis for Telco with a focus on customer churn
+![Look at this graph](https://i.ytimg.com/vi/irDMI_D18ek/maxresdefault.jpg)
 
 ## Table Of Contents
 *   [Description](#description)
@@ -23,6 +24,7 @@ The only setup is to install the same version of libraries I've used. To do that
 - [X] Clean data  
 - [X] Convert categorical data to numerical
 - [X] ~~Normalise~~ Standardised the data for now instead
+- [ ] Display data, means, values, distributions, cors, etc.
 
 #### Exploratory Data Analysis (EDA)
 
@@ -54,6 +56,7 @@ The only setup is to install the same version of libraries I've used. To do that
 ## Results
 
 To be added...
+Figuring out what's the best way to share my paper with all the graphs and conclusions
 
 ## Credits
 Data for the project came from [Kaggle](https://www.kaggle.com/datasets/blastchar/telco-customer-churn)
