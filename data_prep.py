@@ -75,6 +75,8 @@ df = pd.concat([df, df_encoded], axis = 1).drop(columns=ohe_columns)
 
 #label encoding is now rudimentary
 
+df.to_csv("Customer-numerical_raw.csv", index = False)
+
 #---------------------------------------------------------
 #Scaling data and turning the scaled data back into a df
 
@@ -289,9 +291,10 @@ def show_cluster_behaviour(df, n_clust):
     plt.show()
  
 #show_kmeans_elbow_range(df_reduced, range(2, 15))
+
 #show_kmneans_clust_sil_score(df_reduced, range(2, 15))
 
-show_cluster_behaviour(df_reduced, 4)
+#show_cluster_behaviour(df_reduced, 4)
 #---------------------------------------------------------
 #Kmeans + PCA tests
 
@@ -437,9 +440,9 @@ def show_PCA_component_matrix(df, feature):
     grid.add_legend()
     plt.show()
 
-n_clust = 5
-kmeans = KMeans(n_clusters=n_clust, random_state=42)
-df['cluster'] = kmeans.fit_predict(df)
+# n_clust = 5
+# kmeans = KMeans(n_clusters=n_clust, random_state=42)
+# df['cluster'] = kmeans.fit_predict(df)
 
 #show_2d_PCA_clusters(df)
 #show_3d_PCA_clusters(df)
@@ -453,7 +456,7 @@ def hierarchical_plotting(df):
     linkage_matrix = linkage(df, method="ward") 
     dendrogram(linkage_matrix)
 
-    cut_clusters = 110
+    #cut_clusters = 110
 
     df["cluster"]  = fcluster(linkage_matrix, cut_clusters, criterion="distance")
 
@@ -464,3 +467,14 @@ def hierarchical_plotting(df):
     plt.show()
 
 #hierarchical_plotting(df)
+
+#---------------------------------------------------------
+#Saving to file
+
+#n clusters was chosen to be 4 based on the previous data visualisation
+kmeans = KMeans(n_clusters=4, random_state=42)
+kmeans.fit(df_reduced)
+
+df_reduced['Cluster'] = kmeans.fit_predict(df_reduced)
+
+df_reduced.to_csv("Customer-churn-reduced-scaled-clusterised.csv", index = False)
